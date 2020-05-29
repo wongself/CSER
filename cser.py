@@ -7,13 +7,16 @@ from cser.trainer import SpanTrainer
 
 
 def _train(cfg, logger):
+    train_path = cfg.get('input', 'train_path')
+    valid_path = cfg.get('input', 'valid_path')
     trainer = SpanTrainer(cfg, logger)
-    trainer.train()
+    trainer.train(train_path, valid_path)
 
 
 def _eval(cfg, logger):
+    test_path = cfg.get('input', 'test_path')
     trainer = SpanTrainer(cfg, logger)
-    trainer.eval()
+    trainer.eval(test_path)
 
 
 if __name__ == '__main__':

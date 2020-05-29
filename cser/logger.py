@@ -7,7 +7,7 @@ from cser import util
 
 
 class Logger:
-    def __init__(self, cfg, timestamp):
+    def __init__(self, cfg):
         # Config
         self._cfg = cfg
         self._label = self._cfg.get('logger', 'label')
