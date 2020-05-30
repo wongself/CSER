@@ -75,7 +75,7 @@ class BaseTrainer:
             dir_name = '%s_%s' % (name, iteration) if include_iteration else name
             dir_path = os.path.join(save_path, dir_name)
 
-        util.create_directories_dir(dir_path)
+        util.create_directorie(dir_path)
 
         # save model
         if isinstance(model, DataParallel):
@@ -114,7 +114,8 @@ class SpanTrainer(BaseTrainer):
         # Input reader
         self._types_path = self._cfg.get(
             'input', 'types_path')
-        self._neg_entity_count = self._cfg.getint(
+        self._neg_entity_count = None if not self._cfg.has_option(
+            'model', 'neg_entity_count') else self._cfg.getint(
             'model', 'neg_entity_count')
         self._max_span_size = self._cfg.getint(
             'preprocessing', 'max_span_size')
@@ -123,6 +124,7 @@ class SpanTrainer(BaseTrainer):
             self._tokenizer,
             neg_entity_count=self._neg_entity_count,
             max_span_size=self._max_span_size)
+        self._log_reader()
 
         # Create model
         self._model_type = self._cfg.get('model', 'model_type')
@@ -170,7 +172,7 @@ class SpanTrainer(BaseTrainer):
         # Read datasets
         self._reader.read(train_label, train_path, Dataset.TRAIN_MODE)
         self._reader.read(valid_label, valid_path, Dataset.EVAL_MODE)
-        self._log_datasets()
+        # self._log_dataset()
 
         self._epochs = self._cfg.getint('model', 'epochs')
         self._train_batch_size = self._cfg.getint('model', 'train_batch_size')
@@ -288,14 +290,14 @@ class SpanTrainer(BaseTrainer):
         return iteration
 
     def eval(self, test_path: str):
-        test_label = 'train'
+        test_label = 'test'
 
         self._logger.info("Datasets: %s" % test_path)
         self._logger.info("Model: %s" % self._model_type)
 
         # Read datasets
         self._reader.read(test_label, test_path, Dataset.EVAL_MODE)
-        self._log_datasets()
+        # self._log_dataset()
 
         # evaluate
         test_dataset = self._reader.get_dataset(test_label)
@@ -338,7 +340,7 @@ class SpanTrainer(BaseTrainer):
 
             # iterate batches
             total = math.ceil(dataset.did / self._eval_batch_size)
-            for batch in tqdm(data_loader, total=total, desc='Evaluate epoch %s' % epoch):
+            for batch in tqdm(data_loader, total=total, desc='Evaluate epoch %s' % 0):
                 # move batch to selected device
                 batch = util.to_device(batch, self._device)
 
@@ -355,6 +357,8 @@ class SpanTrainer(BaseTrainer):
 
                 # evaluate batch
                 evaluator.eval_batch(entity_clf, batch)
+
+        evaluator.compute_scores()
 
         self._store_predictions = self._cfg.getboolean(
             'logger', 'store_predictions')
@@ -384,7 +388,21 @@ class SpanTrainer(BaseTrainer):
 
         return optimizer_params
 
-    def _log_datasets(self):
+    def _log_reader(self):
+        self._logger.info("Entity type count: %s" % self._reader.entity_type_count)
+
+        self._logger.info("Entities:")
+        for e in self._reader.entity_types.values():
+            self._logger.info(e.verbose_name + '=' + str(e.index))
+
+        for k, d in self._reader.datasets.items():
+            self._logger.info('Dataset: %s' % k)
+            self._logger.info("Document count: %s" % d.did)
+            self._logger.info("Entity count: %s" % d.eid)
+
+        self._logger.info("Context size: %s" % self._reader.context_size)
+
+    def _log_dataset(self):
         self._logger.info("Entity type count: %s" % self._reader.entity_type_count)
 
         self._logger.info("Entities:")
