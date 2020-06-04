@@ -68,7 +68,9 @@ class CSER(BertPreTrainedModel):
         # Max pool entity candidate spans
         # m = (entity_masks.unsqueeze(-1) == 0).float() * (-1e30)
         m = entity_masks.unsqueeze(-1).float()
+        # entity_spans_pool = m + h.unsqueeze(1).repeat(1, entity_masks.shape[1], 1, 1)
         entity_spans_pool = m * h.unsqueeze(1).repeat(1, entity_masks.shape[1], 1, 1)
+        # entity_spans_pool = entity_spans_pool.max(dim=2)[0]
         entity_spans_pool = entity_spans_pool.sum(dim=2)
 
         # Get cls token as candidate context representation

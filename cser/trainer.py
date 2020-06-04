@@ -124,7 +124,6 @@ class SpanTrainer(BaseTrainer):
             self._tokenizer,
             neg_entity_count=self._neg_entity_count,
             max_span_size=self._max_span_size)
-        self._log_reader()
 
         # Create model
         self._model_type = self._cfg.get('model', 'model_type')
@@ -149,12 +148,10 @@ class SpanTrainer(BaseTrainer):
             size_embedding=self._size_embedding,
             freeze_transformer=self._freeze_transformer)
 
-
         # If you want to predict Spans on multiple GPUs, uncomment the following lines
         # # parallelize model
-        # self._model = self._model.cuda()
         # if not self._cpu and self._gpu_count > 1:
-        self._model = torch.nn.DataParallel(self._model, device_ids=[2, 3])
+        #     self._model = torch.nn.DataParallel(self._model, device_ids=[2, 3])
         self._model.to(self._device)
 
         # path to export predictions to
@@ -174,7 +171,7 @@ class SpanTrainer(BaseTrainer):
         # Read datasets
         self._reader.read(train_label, train_path, Dataset.TRAIN_MODE)
         self._reader.read(valid_label, valid_path, Dataset.EVAL_MODE)
-        # self._log_dataset()
+        self._log_dataset()
 
         self._epochs = self._cfg.getint('model', 'epochs')
         self._train_batch_size = self._cfg.getint('model', 'train_batch_size')
@@ -299,7 +296,7 @@ class SpanTrainer(BaseTrainer):
 
         # Read datasets
         self._reader.read(test_label, test_path, Dataset.EVAL_MODE)
-        # self._log_dataset()
+        self._log_dataset()
 
         # evaluate
         test_dataset = self._reader.get_dataset(test_label)
@@ -387,20 +384,6 @@ class SpanTrainer(BaseTrainer):
         }]
 
         return optimizer_params
-
-    def _log_reader(self):
-        self._logger.info("Entity type count: %s" % self._reader.entity_type_count)
-
-        self._logger.info("Entities:")
-        for e in self._reader.entity_types.values():
-            self._logger.info(e.verbose_name + '=' + str(e.index))
-
-        for k, d in self._reader.datasets.items():
-            self._logger.info('Dataset: %s' % k)
-            self._logger.info("Document count: %s" % d.did)
-            self._logger.info("Entity count: %s" % d.eid)
-
-        self._logger.info("Context size: %s" % self._reader.context_size)
 
     def _log_dataset(self):
         self._logger.info("Entity type count: %s" % self._reader.entity_type_count)
