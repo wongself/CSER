@@ -9,7 +9,7 @@ def create_train_sample(doc, neg_entity_count: int, max_span_size: int):
     token_count = len(doc.tokens)
     context_size = len(encodings)
 
-    # positive entities
+    # Positive entities
     pos_entity_spans, pos_entity_types, pos_entity_masks, pos_entity_sizes = [], [], [], []
     for e in doc.entities:
         pos_entity_spans.append(e.span)
@@ -17,7 +17,7 @@ def create_train_sample(doc, neg_entity_count: int, max_span_size: int):
         pos_entity_masks.append(create_entity_mask(*e.span, context_size))
         pos_entity_sizes.append(len(e.tokens))
 
-    # negative entities
+    # Negative entities
     neg_entity_spans, neg_entity_sizes = [], []
     for size in range(1, max_span_size + 1):
         for i in range(0, (token_count - size) + 1):
@@ -26,7 +26,7 @@ def create_train_sample(doc, neg_entity_count: int, max_span_size: int):
                 neg_entity_spans.append(span)
                 neg_entity_sizes.append(size)
 
-    # sample negative entities
+    # Sample negative entities
     neg_entity_samples = random.sample(
         list(zip(neg_entity_spans, neg_entity_sizes)),
         min(len(neg_entity_spans), neg_entity_count))
@@ -35,31 +35,30 @@ def create_train_sample(doc, neg_entity_count: int, max_span_size: int):
     neg_entity_masks = [create_entity_mask(*span, context_size) for span in neg_entity_spans]
     neg_entity_types = [0] * len(neg_entity_spans)
 
-    # merge
+    # Merge
     entity_types = pos_entity_types + neg_entity_types
     entity_masks = pos_entity_masks + neg_entity_masks
     entity_sizes = pos_entity_sizes + list(neg_entity_sizes)
 
     assert len(entity_masks) == len(entity_sizes) == len(entity_types)
 
-    # create tensors
-    # token indices
+    # Create tensors
+    # Token indices
     encodings = torch.tensor(encodings, dtype=torch.long)
 
-    # masking of tokens
+    # Masking of tokens
     context_masks = torch.ones(context_size, dtype=torch.bool)
 
-    # also create samples_masks:
-    # tensors to mask entity samples of batch
-    # since samples are stacked into batches, "padding" entities possibly must be created
-    # these are later masked during loss computation
+    # Tensors to mask entity samples of batch
+    # Since samples are stacked into batches, "padding" entities possibly must be created
+    # These are later masked during loss computation
     if entity_masks:
         entity_types = torch.tensor(entity_types, dtype=torch.long)
         entity_masks = torch.stack(entity_masks)
         entity_sizes = torch.tensor(entity_sizes, dtype=torch.long)
         entity_sample_masks = torch.ones([entity_masks.shape[0]], dtype=torch.bool)
     else:
-        # corner case handling (no pos/neg entities)
+        # Corner case handling (no pos/neg entities)
         entity_types = torch.zeros([1], dtype=torch.long)
         entity_masks = torch.zeros([1, context_size], dtype=torch.bool)
         entity_sizes = torch.zeros([1], dtype=torch.long)
@@ -79,11 +78,8 @@ def create_eval_sample(doc, max_span_size: int):
     token_count = len(doc.tokens)
     context_size = len(encodings)
 
-    # create entity candidates
-    entity_spans = []
-    entity_masks = []
-    entity_sizes = []
-
+    # Create entity candidates
+    entity_spans, entity_masks, entity_sizes = [], [], []
     for size in range(1, max_span_size + 1):
         for i in range(0, (token_count - size) + 1):
             span = doc.tokens[i:i + size].span
@@ -91,28 +87,28 @@ def create_eval_sample(doc, max_span_size: int):
             entity_masks.append(create_entity_mask(*span, context_size))
             entity_sizes.append(size)
 
-    # create tensors
-    # token indices
+    # Create tensors
+    # Token indices
     _encoding = encodings
     encodings = torch.zeros(context_size, dtype=torch.long)
     encodings[:len(_encoding)] = torch.tensor(_encoding, dtype=torch.long)
 
-    # masking of tokens
+    # Masking of tokens
     context_masks = torch.zeros(context_size, dtype=torch.bool)
     context_masks[:len(_encoding)] = 1
 
-    # entities
+    # Entities
     if entity_masks:
         entity_masks = torch.stack(entity_masks)
         entity_sizes = torch.tensor(entity_sizes, dtype=torch.long)
         entity_spans = torch.tensor(entity_spans, dtype=torch.long)
 
-        # tensors to mask entity samples of batch
-        # since samples are stacked into batches, "padding" entities possibly must be created
-        # these are later masked during evaluation
+        # Tensors to mask entity samples of batch
+        # Since samples are stacked into batches, "padding" entities possibly must be created
+        # These are later masked during evaluation
         entity_sample_masks = torch.tensor([1] * entity_masks.shape[0], dtype=torch.bool)
     else:
-        # corner case handling (no entities)
+        # Corner case handling (no entities)
         entity_masks = torch.zeros([1, context_size], dtype=torch.bool)
         entity_sizes = torch.zeros([1], dtype=torch.long)
         entity_spans = torch.zeros([1, 2], dtype=torch.long)

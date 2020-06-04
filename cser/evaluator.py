@@ -1,7 +1,5 @@
 import jinja2
 import json
-import os
-import warnings
 from typing import List, Tuple, Dict
 
 import torch
@@ -124,8 +122,8 @@ class Evaluator:
         print("Evaluation")
 
         print("")
-        print("--- Entities (named entity recognition (NER)) ---")
-        print("An entity is considered correct if the entity type and span is predicted correctly")
+        print("--- Entities (Named Entity Recognition ---")
+        print("An entity is considered correct if the entity span and type is predicted correctly")
         print("")
         gt, pred = self._convert_by_setting(self._gt_entities, self._pred_entities, include_entity_types=True)
         ner_eval = self._score(gt, pred, print_results=True)
@@ -264,9 +262,9 @@ class Evaluator:
         return [m * 100 for m in micro + macro]
 
     def _print_results(self, per_type: List, micro: List, macro: List, types: List):
-        columns = ('type', 'precision', 'recall', 'f1-score', 'support')
+        columns = ('TYPE', 'PRECISION', 'RECALL', 'F1', 'AMOUNT')
 
-        row_fmt = "%20s" + (" %12s" * (len(columns) - 1))
+        row_fmt = "%12s" + (" %12s" * (len(columns) - 1))
         results = [row_fmt % columns, '\n']
 
         metrics_per_type = []

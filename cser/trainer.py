@@ -149,10 +149,12 @@ class SpanTrainer(BaseTrainer):
             size_embedding=self._size_embedding,
             freeze_transformer=self._freeze_transformer)
 
+
         # If you want to predict Spans on multiple GPUs, uncomment the following lines
         # # parallelize model
-        # if self._device.type != 'cpu' and self._gpu_count > 1:
-        #     self._model = torch.nn.DataParallel(self._model, device_ids=[0,])
+        # self._model = self._model.cuda()
+        # if not self._cpu and self._gpu_count > 1:
+        self._model = torch.nn.DataParallel(self._model, device_ids=[2, 3])
         self._model.to(self._device)
 
         # path to export predictions to
@@ -350,8 +352,6 @@ class SpanTrainer(BaseTrainer):
                     context_masks=batch['context_masks'],
                     entity_masks=batch['entity_masks'],
                     entity_sizes=batch['entity_sizes'],
-                    entity_spans=batch['entity_spans'],
-                    entity_sample_masks=batch['entity_sample_masks'],
                     train=False)
                 entity_clf = result
 

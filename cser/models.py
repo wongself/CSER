@@ -50,8 +50,7 @@ class CSER(BertPreTrainedModel):
 
     def _forward_eval(
         self, encodings: torch.tensor, context_masks: torch.tensor,
-        entity_masks: torch.tensor, entity_sizes: torch.tensor,
-        entity_spans: torch.tensor, entity_sample_masks: torch.tensor): # noqa
+        entity_masks: torch.tensor, entity_sizes: torch.tensor): # noqa
         # get contextualized token embeddings from last transformer layer
         context_masks = context_masks.float()
         h = self.bert(input_ids=encodings, attention_mask=context_masks)[0]
@@ -66,22 +65,23 @@ class CSER(BertPreTrainedModel):
         return entity_clf
 
     def _classify_entities(self, encodings, h, entity_masks, size_embeddings):
-        # max pool entity candidate spans
-        m = (entity_masks.unsqueeze(-1) == 0).float() * (-1e30)
-        entity_spans_pool = m + h.unsqueeze(1).repeat(1, entity_masks.shape[1], 1, 1)
-        entity_spans_pool = entity_spans_pool.max(dim=2)[0]
+        # Max pool entity candidate spans
+        # m = (entity_masks.unsqueeze(-1) == 0).float() * (-1e30)
+        m = entity_masks.unsqueeze(-1).float()
+        entity_spans_pool = m * h.unsqueeze(1).repeat(1, entity_masks.shape[1], 1, 1)
+        entity_spans_pool = entity_spans_pool.sum(dim=2)
 
-        # get cls token as candidate context representation
+        # Get cls token as candidate context representation
         entity_ctx = get_token(h, encodings, self._cls_token)
 
-        # create candidate representations including context, max pooled span and size embedding
+        # Create candidate representations including context, max pooled span and size embedding
         entity_repr = torch.cat([
             entity_ctx.unsqueeze(1).repeat(1, entity_spans_pool.shape[1], 1),
             entity_spans_pool, size_embeddings
         ], dim=2)
         entity_repr = self.dropout(entity_repr)
 
-        # classify entity candidates
+        # Classify entity candidates
         entity_clf = self.entity_classifier(entity_repr)
 
         return entity_clf
