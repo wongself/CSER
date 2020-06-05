@@ -1,6 +1,6 @@
+from sklearn.metrics import precision_recall_fscore_support as prfs
 import jinja2
 import json
-from sklearn.metrics import precision_recall_fscore_support as prfs
 import torch
 from transformers import BertTokenizer
 from typing import List, Tuple, Dict
