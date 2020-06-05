@@ -1,10 +1,9 @@
 import jinja2
 import json
-from typing import List, Tuple, Dict
-
-import torch
 from sklearn.metrics import precision_recall_fscore_support as prfs
+import torch
 from transformers import BertTokenizer
+from typing import List, Tuple, Dict
 
 from cser import util
 from cser.dataset import Document, Dataset, EntityType
