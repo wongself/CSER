@@ -154,11 +154,15 @@ class SpanTrainer(BaseTrainer):
         #     self._model = torch.nn.DataParallel(self._model, device_ids=[2, 3])
         self._model.to(self._device)
 
-        # path to export predictions to
+        # Path to export metrics to
+        self._cmetrics_path = os.path.join(
+            self._log_path, 'metrics_%s_epoch_%s.csv')
+
+        # Path to export predictions to
         self._jpredictions_path = os.path.join(
             self._log_path, 'predictions_%s_epoch_%s.json')
 
-        # path to export entity extraction examples to
+        # Path to export entity extraction examples to
         self._hpredictions_path = os.path.join(
             self._log_path, 'predictions_%s_%s_epoch_%s.html')
 
@@ -211,8 +215,7 @@ class SpanTrainer(BaseTrainer):
         self._init_eval = self._cfg.getboolean('logger', 'init_eval')
         if self._init_eval:
             self._eval(
-                self._model, valid_dataset,
-                self._reader, 0, updates_epoch)
+                self._model, valid_dataset, 0, updates_epoch)
 
         # Train
         self._final_eval = self._cfg.getboolean('logger', 'final_eval')
@@ -225,8 +228,7 @@ class SpanTrainer(BaseTrainer):
             # Eval validation sets
             if not self._final_eval or (epoch == self._epochs - 1):
                 self._eval(
-                    self._model, valid_dataset, self._reader,
-                    epoch + 1, updates_epoch)
+                    self._model, valid_dataset, epoch + 1, updates_epoch)
 
         # save final model
         extra = dict(
@@ -300,7 +302,7 @@ class SpanTrainer(BaseTrainer):
 
         # evaluate
         test_dataset = self._reader.get_dataset(test_label)
-        self._eval(self._model, test_dataset, self._reader)
+        self._eval(self._model, test_dataset)
 
         self._logger.info("Logged in: %s" % self._log_path)
 
@@ -339,7 +341,7 @@ class SpanTrainer(BaseTrainer):
 
             # iterate batches
             total = math.ceil(dataset.did / self._eval_batch_size)
-            for batch in tqdm(data_loader, total=total, desc='Evaluate epoch %s' % 0):
+            for batch in tqdm(data_loader, total=total, desc='Evaluate epoch %s' % epoch):
                 # move batch to selected device
                 batch = util.to_device(batch, self._device)
 
@@ -355,7 +357,9 @@ class SpanTrainer(BaseTrainer):
                 # evaluate batch
                 evaluator.eval_batch(entity_clf, batch)
 
-        evaluator.compute_scores()
+        ner_eval = evaluator.compute_scores()
+        self._log_eval(
+            *ner_eval, dataset.label, epoch)
 
         self._store_predictions = self._cfg.getboolean(
             'logger', 'store_predictions')
@@ -398,3 +402,17 @@ class SpanTrainer(BaseTrainer):
             self._logger.info("Entity count: %s" % d.eid)
 
         self._logger.info("Context size: %s" % self._reader.context_size)
+
+    def _log_eval(
+        self,
+        ner_prec_micro: float, ner_rec_micro: float, ner_f1_micro: float,
+        ner_prec_macro: float, ner_rec_macro: float, ner_f1_macro: float,
+        label: str, epoch: int): # noqa
+
+        # log to csv
+        headers = ['Type', 'Precision', 'Recall', 'F1']
+        rows = [
+            ('Micro', ner_prec_micro, ner_rec_micro, ner_f1_micro),
+            ('Micro', ner_prec_macro, ner_rec_macro, ner_f1_macro),
+            ]
+        util.export_csv(self._cmetrics_path % (label, epoch), headers, rows)

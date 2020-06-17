@@ -1,6 +1,6 @@
-from sklearn.metrics import precision_recall_fscore_support as prfs
 import jinja2
 import json
+from sklearn.metrics import precision_recall_fscore_support as prfs
 import torch
 from transformers import BertTokenizer
 from typing import List, Tuple, Dict
@@ -26,7 +26,6 @@ class Evaluator:
         self._dataset_label = dataset_label
 
         self._predictions_path = predictions_path
-
         self._examples_path = examples_path
 
         # entities
@@ -118,8 +117,6 @@ class Evaluator:
             template_path=template_path)
 
     def compute_scores(self):
-        print("Evaluation")
-
         print("")
         print("--- Entities (Named Entity Recognition ---")
         print("An entity is considered correct if the entity span and type is predicted correctly")

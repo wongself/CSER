@@ -1,13 +1,11 @@
+import csv
 import json
 import os
 import torch
 
 from cser.dataset import Span
 
-CSV_DELIMETER = ';'
 
-
-# Create directorie
 def create_directorie(d):
     if d and not os.path.exists(d):
         os.makedirs(d)
@@ -15,7 +13,6 @@ def create_directorie(d):
     return d
 
 
-# Save configs as json
 def save_config(log_path, cfg, filename):
     dic = convert_config_to_dic(cfg)
     path = os.path.join(log_path, '%s.json' % filename)
@@ -23,13 +20,22 @@ def save_config(log_path, cfg, filename):
         json.dump(dic, f)
 
 
-# Convert configs to dictionary
 def convert_config_to_dic(cfg):
     d = dict(cfg._sections)
     for k in d:
         d[k] = dict(d[k])
 
     return d
+
+
+def export_csv(path, headers, rows):
+    try:
+        with open(path, 'w', newline='') as csv_file:
+            writer = csv.writer(csv_file, dialect='excel')
+            writer.writerow(headers)
+            writer.writerows(rows)
+    except Exception as e:
+        print("Write an CSV file to path: %s, Case: %s" % (path, e))
 
 
 def padded_stack(tensors, padding=0):
