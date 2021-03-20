@@ -1,4 +1,4 @@
-jinja2==2.11.2
+jinja2==2.11.3
 numpy==1.18.3
 scikit-learn==0.22.2
 tensorboardX==2.0
