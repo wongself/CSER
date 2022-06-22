@@ -1,5 +1,5 @@
 jinja2==2.11.3
-numpy==1.21.0
+numpy==1.22.0
 scikit-learn==0.22.2
 tensorboardX==2.0
 torch==1.4.0
